@@ -1,5 +1,26 @@
-#pragma once
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.  
+ */
+ 
 #include <string>
+#include "interpreter.h"
+
+#pragma once
 
 class App {
 public:
@@ -11,10 +32,11 @@ public:
 
 /**
  * Setup LittleFS.
- * @param[in] aPath path defined to access the local FS.
+ * @param[in] label spiffs partition's label.
+ * @param[in] path path defined to access the local FS.
  * @return error code or ESP_OK if no error.
  */
-  int setup_FS(const std::string& path = "/FS");
+  int setup_FS(const std::string& label, const std::string& path = "/FS");
 
 /**
  * Setup ESP_Console.
@@ -31,6 +53,9 @@ public:
  * @param[in] prompt Prompt given before each command.
  */
   void run_console(const std::string& prompt);
+
+  Interpreter inter;
+
 
 protected:
 /**
@@ -60,6 +85,7 @@ protected:
   int exec_command(const int argc, const char *const argv[]);
   
 private:
+
   static constexpr const char* SETUP_TAG = "SETUP";
   static constexpr const char* LOOP_TAG = "LOOP";
 

@@ -1,7 +1,26 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.  
+ */
+ 
 #include <ostream>
 #include "app.h"
 
-#define LOG_LOCAL_LEVEL ESP_LOG_INFO
+// #define LOG_LOCAL_LEVEL ESP_LOG_INFO
 #include <esp_log.h>
 #include <esp_console.h>
 #include <linenoise/linenoise.h>
@@ -51,27 +70,29 @@ void App::setup_uart() {
   ESP_ERROR_CHECK( setvbuf(stdin, NULL, _IONBF, 0) );
 }
 
-int App::setup_FS(const std::string& path) {
+int App::setup_FS(const std::string& label, const std::string& path) {
   const esp_vfs_littlefs_conf_t config = {
     .base_path = path.c_str(),
-    .partition_label = "spiffs",
+    .partition_label = label.c_str(),
     .format_if_mount_failed = true,
     .dont_mount = false
   };
   ESP_LOGI(SETUP_TAG, "Registering %s partition as %s", config.partition_label, config.base_path);
-  switch (const auto ret = esp_vfs_littlefs_register(&config)) {
+  const auto reg = esp_vfs_littlefs_register(&config);
+  ESP_LOGI(SETUP_TAG, "Registered littlefs %i", reg);
+  switch (reg) {
     case ESP_OK:
       ESP_LOGI(SETUP_TAG, "FS mounted.");
       break;
     case ESP_FAIL:
       ESP_LOGE(SETUP_TAG, "Failed to mount or format filesystem");
-      return ret;
+      return reg;
     case ESP_ERR_NOT_FOUND:
       ESP_LOGE(SETUP_TAG, "Failed to find %s partition", config.partition_label);
-      return ret;
+      return reg;
     default:
-      ESP_LOGE(SETUP_TAG, "Failed to initialize LittleFS (%s)", esp_err_to_name(ret));
-      return ret;
+      ESP_LOGE(SETUP_TAG, "Failed to initialize LittleFS (%s)", esp_err_to_name(reg));
+      return reg;
   }
 
   size_t total, used = 0;
@@ -260,7 +281,7 @@ int App::exec_command(const int argc, const char *const argv[]) {
     return ESP_ERR_NOT_SUPPORTED;
   }
 
-  std::string cmd_upper={argv[0]};
+  std::string cmd_upper{argv[0]};
   for (auto& c: cmd_upper) c = (char)toupper(c);
 
   if (cmd_upper == "HELP") {  // Ask for help
