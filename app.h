@@ -56,7 +56,6 @@ public:
 
   Interpreter inter;
 
-
 protected:
 /**
  * Treat "FILES" command and return a list of files, following the given filter.
