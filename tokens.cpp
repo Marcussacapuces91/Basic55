@@ -17,13 +17,17 @@
  * under the License.  
  */
 
+// #include <string>
+// #include <memory>
+#include <vector>
+#include <iostream>
+
 #include <esp_log.h>
-#include <string>
-#include <memory>
+
 #include "tokens.h"
 
 
-std::unique_ptr<const TokenSpaces> Token::parserSpaces(const std::string& line, size_t& end) {
+std::unique_ptr<const TokenSpaces> Token::parseSpaces(const std::string& line, size_t& end) {
   std::string s;
   size_t pos = 0;
   while (pos < line.size()) {
@@ -35,11 +39,12 @@ std::unique_ptr<const TokenSpaces> Token::parserSpaces(const std::string& line, 
   if (pos > 0) return std::make_unique<TokenSpaces>(s); else return nullptr;
 };
 
-std::unique_ptr<const Token> Token::parserNum(const std::string& line, size_t& end) {
-  if (!line.size()) return nullptr;
-  if (std::isdigit(line[0]) || (line[0] == '.') || (std::toupper(line[0]) == 'E')) {
+std::unique_ptr<const Token> Token::parseNum(const std::string& line, size_t& end) {
+  if (!line.size()) return nullptr; // empty
+
+  if (std::isdigit(line[0]) || (line[0] == '.') || (line[0] == '-')) {
     size_t end_int;
-    const auto res = parserInt(line, end_int);
+    const auto res = parseInt(line, end_int);
     std::string s{line.substr(0, end_int)};
 
     if (end_int < line.size()) {
@@ -53,7 +58,82 @@ std::unique_ptr<const Token> Token::parserNum(const std::string& line, size_t& e
     }
     end = s.size();
     return std::unique_ptr<const Token>(new TokenInteger{s, res});
-  } else {
+  } else {  // not starting as a number
     return nullptr;
   }
+};
+
+std::unique_ptr<const TokenString> Token::parseString(const std::string& line, size_t& end) {
+  if (!line.size() || (line[0] != '"')) return nullptr; // empty
+  std::string s;
+  size_t pos = 1;
+  while (pos < line.size()) {
+    const auto c = line[pos];
+    if ((c == '\\') && (pos + 1 < line.size())) {
+      if (line[pos + 1] == '\\') { s += c; pos += 2; continue; }
+      else if (line[pos + 1] == '"') { s += '"'; pos += 2; continue; }
+      ESP_LOGE("LEXER", "Unknown escaped sequence!");
+      return nullptr;
+    } else if (c == '"') break;
+    else { s += c; ++pos; }
+  }
+  if (line[pos] == '"') {
+    end = pos;
+    return std::make_unique<const TokenString>(s);
+  } else {
+    ESP_LOGE("LEXER", "String unclosed!");
+    return nullptr;
+  }
+};
+
+std::unique_ptr<const TokenInstruction> Token::parseInstruction(const std::string& line, size_t& end) {
+  static const std::vector<std::vector<std::pair<int, std::string>>> cmds = {
+    { }, // A
+    { }, // B
+    { }, // C
+    { }, // D
+    { { 2, "END" } }, // E
+    { }, // F
+    { }, // G
+    { }, // H
+    { }, // I
+    { }, // J
+    { }, // K
+    { }, // L
+    { }, // M
+    { }, // N
+    { }, // O
+    { { 1, "PRINT" } },
+    { }, // Q
+    { }, // R
+    { }, // S
+    { }, // T
+    { }, // U
+    { }, // V
+    { }, // W
+    { }, // X
+    { }, // Y
+    { }, // Z
+  };
+
+  if (!line.size() && !std::isalpha(line[0])) return nullptr;
+
+  const auto c = std::toupper(line[0]);
+  for (auto& cm : cmds[c - 'A']) {
+    std::cout << cm.second << std::endl;
+  }
+
+
+  return nullptr;
+
+      // if (std::isalpha(aLine[start])) {
+      //   ESP_LOGI("LEXER", "Alpha (%c)", aLine[start]);
+      //   const auto c = std::toupper(aLine[start]);
+      //   for (auto& cm : cmds[c - 'A']) {
+      //     std:: cout << cm.second << std::endl;
+      //   }
+      //   return;
+
+      //   continue;
+      // }
 };
