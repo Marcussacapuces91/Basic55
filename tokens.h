@@ -18,15 +18,46 @@
  */
 
 #include <string>
+#include <memory>
 
 #pragma once
 
+class TokenSpaces;
+
 class Token {
 public:
-  Token(const std::string& aToken): token(aToken) {}
+  Token(const std::string& aToken): token(aToken) {};
+  virtual ~Token() = default;
+
+  static std::unique_ptr<const TokenSpaces> parserSpaces(const std::string& line, size_t& end);
+  static std::unique_ptr<const Token> parserNum(const std::string& line, size_t& end);
 
 protected:
   const std::string token;
+
+  static long int parserInt(const std::string& line, size_t& end) {
+    int res = 0;
+    bool neg = false;
+    int pos = 0;
+    if (line[0] == '-') { neg = true; ++pos; }
+    else if (line[0] == '+') ++pos;
+
+    while (pos < line.size()) {
+      if (std::isdigit(line[pos])) {
+        res = res * 10 + (line[pos] - '0');
+      } else break;
+      ++pos;
+    }
+    end = pos;
+    return (neg ? - res : res);
+  };
+
+
+};
+
+class TokenSpaces : public Token {
+public:
+  TokenSpaces(const std::string& aToken) : Token(aToken) {};
 
 };
 
@@ -37,4 +68,12 @@ public:
 private:
   const int value;
 
+};
+
+class TokenCommand : public Token {
+public:
+  TokenCommand(const std::string& aToken, const int aCmd) : Token(aToken), cmd(aCmd) {};
+
+private:
+  const int cmd;
 };
