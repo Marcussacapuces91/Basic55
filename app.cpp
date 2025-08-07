@@ -20,7 +20,9 @@
 #include <ostream>
 #include "app.h"
 
-// #define LOG_LOCAL_LEVEL ESP_LOG_INFO
+#ifndef LOG_LOCAL_LEVEL
+#define LOG_LOCAL_LEVEL ESP_LOG_INFO
+#endif
 #include <esp_log.h>
 #include <esp_console.h>
 #include <linenoise/linenoise.h>
