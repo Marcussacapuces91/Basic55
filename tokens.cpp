@@ -1,3 +1,5 @@
+#include <memory>
+#include <string_view>
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -22,12 +24,18 @@
 #include <vector>
 #include <iostream>
 
+#ifndef LOG_LOCAL_LEVEL
+#define LOG_LOCAL_LEVEL ESP_LOG_INFO
+#endif
 #include <esp_log.h>
 
 #include "tokens.h"
 
 
-std::unique_ptr<const TokenSpaces> Token::parseSpaces(const std::string& line, size_t& end) {
+std::unique_ptr<const TokenSpaces> Token::parseSpaces(const std::string_view line, size_t& end) {
+  ESP_LOGD("LEXER", "Trying to parse spaces...");
+  if (line.empty()) return nullptr; // empty
+
   std::string s;
   size_t pos = 0;
   while (pos < line.size()) {
@@ -39,32 +47,34 @@ std::unique_ptr<const TokenSpaces> Token::parseSpaces(const std::string& line, s
   if (pos > 0) return std::make_unique<TokenSpaces>(s); else return nullptr;
 };
 
-std::unique_ptr<const Token> Token::parseNum(const std::string& line, size_t& end) {
-  if (!line.size()) return nullptr; // empty
+std::unique_ptr<const Token> Token::parseNum(const std::string_view line, size_t& end) {
+  ESP_LOGD("LEXER", "Trying to parse numeric...");
+  if (line.empty()) return nullptr; // empty
+  if (!std::isdigit(line[0]) && (line[0] != '.') && (line[0] != '-')) return nullptr; // not a number
 
-  if (std::isdigit(line[0]) || (line[0] == '.') || (line[0] == '-')) {
-    size_t end_int;
-    const auto res = parseInt(line, end_int);
-    std::string s{line.substr(0, end_int)};
+  size_t end_int;
+  const auto res = parseInt(line, end_int);
+  std::string s{line.substr(0, end_int)};
 
-    if (end_int < line.size()) {
-      if (line[end_int+1] == '.') {  // Float
-        ESP_LOGE("LEXER", "UN POINT DECIMAL! TODO!");
-        return nullptr;
-      } else if (std::toupper(line[end_int+1]) == 'E') { // Float with Exp
-        ESP_LOGE("LEXER", "UN EXPOSANT! TODO!");
-        return nullptr;
-      }      
+  ESP_LOGD("PARSE NUM", "s=%s, res=%i", s.c_str(), res);
+
+  if (end_int < line.size()) {
+    if (line[end_int] == '.') {  // Float
+      ESP_LOGE("LEXER", "UN POINT DECIMAL! TODO!");
+      return nullptr;
+    } else if (std::toupper(line[end_int]) == 'E') { // Float with Exp
+      ESP_LOGE("LEXER", "UN EXPOSANT! TODO!");
+      return nullptr;
     }
-    end = s.size();
-    return std::unique_ptr<const Token>(new TokenInteger{s, res});
-  } else {  // not starting as a number
-    return nullptr;
   }
+
+  end = s.size();
+  return std::unique_ptr<const Token>(new TokenInteger{s, res});
 };
 
-std::unique_ptr<const TokenString> Token::parseString(const std::string& line, size_t& end) {
-  if (!line.size() || (line[0] != '"')) return nullptr; // empty
+std::unique_ptr<const TokenString> Token::parseString(const std::string_view line, size_t& end) {
+  ESP_LOGD("LEXER", "Trying to parse string...");
+  if (line.empty() || (line[0] != '"')) return nullptr; // empty
   std::string s;
   size_t pos = 1;
   while (pos < line.size()) {
@@ -77,8 +87,11 @@ std::unique_ptr<const TokenString> Token::parseString(const std::string& line, s
     } else if (c == '"') break;
     else { s += c; ++pos; }
   }
+
+//  ESP_LOGI("PARSE STR", "s=%s, pos=%i, c=%c", s.c_str(), pos, line[pos]);
+
   if (line[pos] == '"') {
-    end = pos;
+    end = pos + 1;
     return std::make_unique<const TokenString>(s);
   } else {
     ESP_LOGE("LEXER", "String unclosed!");
@@ -86,28 +99,30 @@ std::unique_ptr<const TokenString> Token::parseString(const std::string& line, s
   }
 };
 
-std::unique_ptr<const TokenInstruction> Token::parseInstruction(const std::string& line, size_t& end) {
-  static const std::vector<std::vector<std::pair<int, std::string>>> cmds = {
+std::unique_ptr<const TokenInstruction> Token::parseInstruction(const std::string_view line, size_t& end) {
+  ESP_LOGD("LEXER", "Trying to parse instruction...");
+
+  static const std::vector<std::vector<std::pair<int, std::string_view>>> cmds = {
     { }, // A
-    { }, // B
+    { { 21, "BASE" } }, // B
     { }, // C
-    { }, // D
-    { { 2, "END" } }, // E
-    { }, // F
-    { }, // G
+    { { 18, "DATA" }, { 19, "DIM" }, { 24, "DEF" } }, // D
+    { { 2, "END" }, { 9, "ELSE" } }, // E
+    { { 12, "FOR" } }, // F
+    { { 4, "GO" } }, // G
     { }, // H
-    { }, // I
+    { { 7, "IF" }, { 15, "INPUT" } }, // I
     { }, // J
     { }, // K
-    { }, // L
+    { { 3, "LET" } }, // L
     { }, // M
-    { }, // N
-    { }, // O
+    { { 14, "NEXT" } }, // N
+    { { 10, "ON" }, { 20, "OPTION" } }, // O
     { { 1, "PRINT" } },
     { }, // Q
-    { }, // R
-    { }, // S
-    { }, // T
+    { { 16, "READ" }, { 17, "RESTORE" }, { 22, "REM" }, { 23, "RANDOMIZE" }, { 25, "RETURN" } }, // R
+    { { 6, "SUB" }, { 11, "STOP" }, { 13, "STEP" } }, // S
+    { { 5, "TO" }, { 8, "THEN" } }, // T
     { }, // U
     { }, // V
     { }, // W
@@ -116,24 +131,27 @@ std::unique_ptr<const TokenInstruction> Token::parseInstruction(const std::strin
     { }, // Z
   };
 
-  if (!line.size() && !std::isalpha(line[0])) return nullptr;
+  if (!line.size() || !std::isalpha(line[0])) return nullptr;
 
   const auto c = std::toupper(line[0]);
   for (auto& cm : cmds[c - 'A']) {
-    std::cout << cm.second << std::endl;
+    std::string ins;
+    for(const char& c: line.substr(0, cm.second.size())) ins += std::toupper(c);
+    if (cm.second == ins) {
+      end = cm.second.size();
+      return std::make_unique<const TokenInstruction>(line.substr(0, cm.second.size()), cm.first);
+    }
   }
-
-
   return nullptr;
+};
 
-      // if (std::isalpha(aLine[start])) {
-      //   ESP_LOGI("LEXER", "Alpha (%c)", aLine[start]);
-      //   const auto c = std::toupper(aLine[start]);
-      //   for (auto& cm : cmds[c - 'A']) {
-      //     std:: cout << cm.second << std::endl;
-      //   }
-      //   return;
+std::unique_ptr<const Token> Token::parseSeparator(const std::string_view line, size_t& end) {
+  ESP_LOGD("LEXER", "Trying to parse separator...");
+  if (line.empty()) return nullptr; // empty
 
-      //   continue;
-      // }
+  if (line[0] == ';' || line[0] == ',' || line[0] == ':') {
+    end = 1;
+    return std::make_unique<const TokenSeparator>(line[0]);
+  }
+  return nullptr;
 };
