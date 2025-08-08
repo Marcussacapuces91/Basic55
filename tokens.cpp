@@ -138,8 +138,13 @@ std::unique_ptr<const TokenInstruction> Token::parseInstruction(const std::strin
     std::string ins;
     for(const char& c: line.substr(0, cm.second.size())) ins += std::toupper(c);
     if (cm.second == ins) {
-      end = cm.second.size();
-      return std::make_unique<const TokenInstruction>(line.substr(0, cm.second.size()), cm.first);
+      if (cm.second == "REM") {
+        end = line.size();
+        return std::make_unique<const TokenInstruction>(line, cm.first);
+      } else {
+        end = cm.second.size();
+        return std::make_unique<const TokenInstruction>(line.substr(0, cm.second.size()), cm.first);
+      }
     }
   }
   return nullptr;
