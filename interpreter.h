@@ -1,3 +1,4 @@
+#include <memory>
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -20,30 +21,52 @@
 #include <string>
 #include <iostream>
 #include <cctype>
+#include <vector>
+
+#ifndef LOG_LOCAL_LEVEL
+#define LOG_LOCAL_LEVEL ESP_LOG_INFO
+#endif
 #include <esp_log.h>
 
+#include "tokens.h"
+
 #pragma once
+
+using ListTokens = std::vector<std::unique_ptr<const Token>>;
 
 class Interpreter {
 
 public:
-  void lexer(const std::string& aLine) {
-    for (c = aLine.begin() ; !aLine.end() ;) {
-      if (std::isspace(c) {
-        ESP_LOGI("LEXER", "Space (%c)", c);
-      } else if (std::isalpha(c)) {
-        ESP_LOGI("LEXER", "Alpha (%c)", c);
-      } else if (std::isdigit(c)) {
-        ESP_LOGI("LEXER", "Digit (%c)", c);
+/**
+ * Lexer
+ * @param line a string contening all char to be traeted by the lexer.
+ */
+  std::unique_ptr<ListTokens> lexer(const std::string_view line) {
 
+    auto tokens = std::make_unique<ListTokens>();
 
-
-      } else if (std::ispunct(c)) {
-        ESP_LOGI("LEXER", "Ponctu (%c)", c);
+    size_t start = 0;
+    while (start < line.size()) {
+      size_t end = 0;
+      std::unique_ptr<const Token> token;
+      const auto sub = std::string{line}.substr(start);
+      ESP_LOGD("LEXER", "start: %i, sub '%s'", start, sub.c_str());
+      if ((token = Token::parseSpaces(sub, end)) ||
+          (token = Token::parseNum(sub, end)) ||
+          (token = Token::parseString(sub, end)) ||
+          (token = Token::parseInstruction(sub, end)) ||
+          (token = Token::parseSeparator(sub, end))) {
+        start += end;
+        if (!token) ESP_LOGI("LEXER", "Token NULL!");
+        ESP_LOGD("LEXER", "Token: '%s'", token->to_string().c_str());
+        tokens->emplace_back(std::move(token));
       } else {
-        ESP_LOGW("LEXER", "Unkonwn type (%c)", c);
+        ESP_LOGE("LEXER", "No token detected in \"%s\"!", sub.c_str());
+        return nullptr;
       }
     }
+
+    return tokens;
   }
 
 
