@@ -24,6 +24,30 @@
 
 App app;
 
+void parse_file(const std::string& filename) {
+  std::ifstream file(filename);
+  if (!file.is_open()) {
+    ESP_LOGE("SETUP", "Error opening file %s!", filename.c_str());
+    return;
+  }
+
+  std::string s;
+  while (getline(file, s)) {
+    ESP_LOGD("SETUP", "getline: %s", s.c_str());
+    const auto pTokens = app.inter.lexer(s);
+    if (pTokens) {
+      // for (const auto& pToken: *pTokens)
+      //   std::cout << pToken->to_string();
+      // std::cout << std::endl;  
+    } else {
+      ESP_LOGE("SETUP", "Error parsing line %s!", s.c_str());
+      file.close();
+      return;
+    }
+  }
+  file.close();
+}
+
 void setup() {
   esp_log_level_set("*", ESP_LOG_INFO);
 
@@ -32,18 +56,12 @@ void setup() {
   ESP_ERROR_CHECK( app.setup_FS("spiffs", "/FS") );
   app.copyright();
 
-  ESP_LOGI("SETUP", "Openging P001.BAS");
-  std::ifstream file{"/FS/P001.BAS"};
-  if (!file.is_open()) {
-    ESP_LOGE("SETUP", "Error opening file!");
-    return;
-  }
-  std::string s;
-  while (getline(file, s)) {
-    std::cout << s << std::endl;
-    app.inter.lexer(s);
-  }
-  file.close();
+  char s[20];
+  for (int i = 1; i <= 208; ++i) {
+    snprintf(s, 20, "/FS/P%03d.BAS", i);
+    ESP_LOGI("SETUP", "Parsing file %s", s);
+    parse_file(s);
+  };
 }
 
 void loop() {
