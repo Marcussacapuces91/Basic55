@@ -1,3 +1,4 @@
+#include <cctype>
 #include <memory>
 #include <string_view>
 /**
@@ -69,7 +70,8 @@ std::unique_ptr<const Token> Token::parseNum(const std::string_view line, size_t
   }
 
   end = s.size();
-  return std::unique_ptr<const Token>(new TokenInteger{s, res});
+//  return std::unique_ptr<const Token>(new TokenInteger{s, res});
+  return std::make_unique<const TokenInteger>(s, res);
 };
 
 std::unique_ptr<const TokenString> Token::parseString(const std::string_view line, size_t& end) {
@@ -122,7 +124,7 @@ std::unique_ptr<const TokenInstruction> Token::parseInstruction(const std::strin
     { }, // Q
     { { 16, "READ" }, { 17, "RESTORE" }, { 22, "REM" }, { 23, "RANDOMIZE" }, { 25, "RETURN" } }, // R
     { { 6, "SUB" }, { 11, "STOP" }, { 13, "STEP" } }, // S
-    { { 5, "TO" }, { 8, "THEN" } }, // T
+    { { 5, "TO" }, { 8, "THEN" }, { 26, "TAB(" } }, // T
     { }, // U
     { }, // V
     { }, // W
@@ -150,13 +152,76 @@ std::unique_ptr<const TokenInstruction> Token::parseInstruction(const std::strin
   return nullptr;
 };
 
-std::unique_ptr<const Token> Token::parseSeparator(const std::string_view line, size_t& end) {
+std::unique_ptr<const TokenSeparator> Token::parseSeparator(const std::string_view line, size_t& end) {
   ESP_LOGD("LEXER", "Trying to parse separator...");
-  if (line.empty()) return nullptr; // empty
+  if (line.empty() || !std::ispunct(line[0])) return nullptr; // empty
 
   if (line[0] == ';' || line[0] == ',' || line[0] == ':') {
     end = 1;
     return std::make_unique<const TokenSeparator>(line[0]);
   }
+  return nullptr;
+};
+
+std::unique_ptr<const TokenIdentifier> Token::parseIdentifier(const std::string_view line, size_t& end) {
+  ESP_LOGD("LEXER", "Trying to parse identifier...");
+
+if (line.empty() || !std::isalpha(line[0])) return nullptr;
+
+  size_t pos = 1;
+  while (pos < line.size() && std::isalnum(line[pos])) ++pos;
+
+  TypeId type = TypeId::FLOAT; // par défaut
+
+  if (pos < line.size()) {  // suffix
+    switch (line[pos]) {
+      case '$': type = TypeId::STRING; ++pos; break;
+      case '%': type = TypeId::INTEGER; ++pos; break;
+      case '!': type = TypeId::FLOAT; ++pos; break;
+      case '#': type = TypeId::DOUBLE; ++pos; break;
+      default: break; // pas de suffixe
+    }
+  }
+
+  const std::string_view ident = line.substr(0, pos);
+  end = pos;
+  ESP_LOGD("LEXER", "Identifier: '%.*s', Type: %d", int(ident.size()), ident.data(), int(type));
+  return std::make_unique<const TokenIdentifier>(ident, type);
+};
+
+std::unique_ptr<const TokenOperator> Token::parseOperator(const std::string_view line, size_t& end) {
+  ESP_LOGD("LEXER", "Trying to parse operator...");
+  if (line.empty() || !std::ispunct(line[0])) return nullptr; // empty
+
+  switch (line[0]) {
+    case '+': // add
+    case '-': // sub
+    case '*': // mult
+    case '/': // float div
+    case '%': // int div
+    case '^': // pow
+    case '(': // (
+    case ')': // )
+    case '=': // = equal or affectation
+      end = 1;
+      return std::make_unique<const TokenOperator>(line.substr(0, end));
+    case '<': // smaller
+      if ((line.size() >= 2) && (line.substr(0, 2) == "<=")) {
+        end = 2;
+        return std::make_unique<const TokenOperator>(line.substr(0, end));
+      } else {
+        end = 1;
+        return std::make_unique<const TokenOperator>(line.substr(0, end));
+      }
+    case '>': // bigger
+      if ((line.size() >= 2) && (line.substr(0, 2) == ">=")) {
+        end = 2;
+        return std::make_unique<const TokenOperator>(line.substr(0, end));
+      } else {
+        end = 1;
+        return std::make_unique<const TokenOperator>(line.substr(0, end));
+      }
+  }
+
   return nullptr;
 };
