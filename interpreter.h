@@ -1,4 +1,3 @@
-#include <memory>
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -18,10 +17,13 @@
  * under the License.  
  */
 
+#pragma once
+
 #include <string>
 #include <iostream>
 #include <cctype>
 #include <vector>
+#include <memory>
 
 #ifndef LOG_LOCAL_LEVEL
 #define LOG_LOCAL_LEVEL ESP_LOG_INFO
@@ -29,8 +31,6 @@
 #include <esp_log.h>
 
 #include "tokens.h"
-
-#pragma once
 
 using ListTokens = std::vector<std::unique_ptr<const Token>>;
 
@@ -41,7 +41,7 @@ public:
  * Lexer
  * @param line a string contening all char to be traeted by the lexer.
  */
-  std::unique_ptr<ListTokens> lexer(const std::string_view line) {
+  std::unique_ptr<ListTokens> tokenizeLine(const std::string_view line) {
 
     auto tokens = std::make_unique<ListTokens>();
 
@@ -49,23 +49,28 @@ public:
     while (start < line.size()) {
       size_t end = 0;
       std::unique_ptr<const Token> token;
-      const auto sub = std::string{line}.substr(start);
-      ESP_LOGD("LEXER", "start: %i, sub '%s'", start, sub.c_str());
+//      const auto sub = std::string{line}.substr(start);
+      const std::string_view sub = line.substr(start);
+      ESP_LOGD("LEXER", "start: %i, sub '%.*s'", start, int(sub.size()), sub.data());
       if ((token = Token::parseSpaces(sub, end)) ||
+//          (token = Token::parseInstruction(sub, end)) ||
+// Ajouter ici le parsing des fonctions
+          (token = Token::parseIdentifier(sub, end)) ||
+
           (token = Token::parseNum(sub, end)) ||
           (token = Token::parseString(sub, end)) ||
-          (token = Token::parseInstruction(sub, end)) ||
-          (token = Token::parseSeparator(sub, end))) {
+          (token = Token::parseSeparator(sub, end)) ||
+          (token = Token::parseOperator(sub, end)))
+      {
         start += end;
-        if (!token) ESP_LOGI("LEXER", "Token NULL!");
         ESP_LOGD("LEXER", "Token: '%s'", token->to_string().c_str());
         tokens->emplace_back(std::move(token));
       } else {
-        ESP_LOGE("LEXER", "No token detected in \"%s\"!", sub.c_str());
+        ESP_LOGE("LEXER", "No token detected in '%.*s'", int(sub.size()), sub.data());
         return nullptr;
       }
     }
-
+    ESP_LOGD("LEXER", "Tokenization complete. %zu tokens found.", tokens->size());
     return tokens;
   }
 
