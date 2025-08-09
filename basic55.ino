@@ -21,6 +21,9 @@
 
 #include <fstream>
 #include <iostream>
+#include <driver/gpio.h>
+
+#define BLINK_GPIO gpio_num_t(22)
 
 App app;
 
@@ -33,16 +36,16 @@ void parse_file(const std::string& filename) {
 
   std::string s;
   while (getline(file, s)) {
+    gpio_set_level(BLINK_GPIO, 0);
     ESP_LOGD("SETUP", "getline: %s", s.c_str());
-    const auto pTokens = app.inter.lexer(s);
+    const auto pTokens = app.inter.tokenizeLine(s);
+    gpio_set_level(BLINK_GPIO, 1);
     if (pTokens) {
       // for (const auto& pToken: *pTokens)
       //   std::cout << pToken->to_string();
       // std::cout << std::endl;  
     } else {
-      ESP_LOGE("SETUP", "Error parsing line %s!", s.c_str());
-      file.close();
-      return;
+      ESP_LOGE("SETUP", "Error parsing line %s", s.c_str());
     }
   }
   file.close();
@@ -54,7 +57,11 @@ void setup() {
   app.setup_uart();
   app.setup_console();
   ESP_ERROR_CHECK( app.setup_FS("spiffs", "/FS") );
-  app.copyright();
+  app.displayCopyright();
+
+// Configure the GPIO pin
+  gpio_reset_pin(BLINK_GPIO);
+  gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
 
   char s[20];
   for (int i = 1; i <= 208; ++i) {
@@ -62,6 +69,8 @@ void setup() {
     ESP_LOGI("SETUP", "Parsing file %s", s);
     parse_file(s);
   };
+
+
 }
 
 void loop() {
