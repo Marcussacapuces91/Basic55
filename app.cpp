@@ -72,10 +72,10 @@ void App::setup_uart() {
   ESP_ERROR_CHECK( setvbuf(stdin, NULL, _IONBF, 0) );
 }
 
-int App::setup_FS(const std::string& label, const std::string& path) {
+int App::setup_FS(const std::string& partitionLabel, const std::string& path) {
   const esp_vfs_littlefs_conf_t config = {
     .base_path = path.c_str(),
-    .partition_label = label.c_str(),
+    .partition_label = partitionLabel.c_str(),
     .format_if_mount_failed = true,
     .dont_mount = false
   };
@@ -143,7 +143,7 @@ void App::setup_console() {
 
 }
 
-void App::copyright() const {
+void App::displayCopyright() const {
   std::cout << "MS-BASIC 0.1" << std::endl
             << "(C) Copyright M. SIBERT 2025" << std::endl;
 
