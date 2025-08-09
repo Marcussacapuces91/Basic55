@@ -17,6 +17,8 @@
  * under the License.  
  */
 
+#pragma once
+
 #include <string>
 #include <memory>
 
@@ -25,11 +27,12 @@
 #endif
 #include <esp_log.h>
 
-#pragma once
-
 class TokenSpaces;
 class TokenString;
 class TokenInstruction;
+class TokenSeparator;
+class TokenIdentifier;
+class TokenOperator;
 
 class Token {
 public:
@@ -44,7 +47,9 @@ public:
   static std::unique_ptr<const Token> parseNum(const std::string_view line, size_t& end);
   static std::unique_ptr<const TokenString> parseString(const std::string_view line, size_t& end);
   static std::unique_ptr<const TokenInstruction> parseInstruction(const std::string_view line, size_t& end);
-  static std::unique_ptr<const Token> parseSeparator(const std::string_view line, size_t& end);
+  static std::unique_ptr<const TokenSeparator> parseSeparator(const std::string_view line, size_t& end);
+  static std::unique_ptr<const TokenIdentifier> parseIdentifier(const std::string_view line, size_t& end);
+  static std::unique_ptr<const TokenOperator> parseOperator(const std::string_view line, size_t& end);
 
 protected:
   const std::string token;
@@ -115,5 +120,27 @@ private:
 class TokenSeparator : public Token {
 public:
   TokenSeparator(const char aToken) : Token(std::string{1, aToken}) {};
+
+};
+
+enum class TypeId {
+  STRING,
+  INTEGER,
+  FLOAT,
+  DOUBLE,
+};
+
+class TokenIdentifier : public Token {
+public:
+  TokenIdentifier(const std::string_view aToken, const TypeId aType) : Token(aToken), typeId(aType) {};
+
+private:
+  const TypeId typeId;
+
+};
+
+class TokenOperator : public Token {
+public:
+  TokenOperator(const std::string_view aToken) : Token(aToken) {};
 
 };
