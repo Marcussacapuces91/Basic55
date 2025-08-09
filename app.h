@@ -17,10 +17,10 @@
  * under the License.  
  */
  
+#pragma once
+
 #include <string>
 #include "interpreter.h"
-
-#pragma once
 
 class App {
 public:
@@ -36,7 +36,7 @@ public:
  * @param[in] path path defined to access the local FS.
  * @return error code or ESP_OK if no error.
  */
-  int setup_FS(const std::string& label, const std::string& path = "/FS");
+  int setup_FS(const std::string& partitionLabel, const std::string& path = "/FS");
 
 /**
  * Setup ESP_Console.
@@ -46,7 +46,7 @@ public:
 /**
  * Display a Copyright information and some technicals informations like free memory.
  */
-  void copyright() const;
+  void displayCopyright() const;
 
 /**
  * Provide a prompt and treat the answer accordingly.
