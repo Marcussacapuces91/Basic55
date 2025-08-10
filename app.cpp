@@ -269,6 +269,20 @@ int App::cmd_type_file(const std::string& filename) {
   return ESP_OK;
 }
 
+int App::cmd_reboot() {
+  std::cout << "Reboot in a few seconds..." << std::endl;
+
+  const auto start = esp_timer_get_time();
+
+  int64_t current;
+  while ((current = esp_timer_get_time()) - start < 10000000) {
+    
+  }
+
+  esp_restart();
+  return ESP_OK;
+}
+
 int App::exec_command(const int argc, const char *const argv[]) {
   if (!argc) return ESP_ERR_INVALID_SIZE;
 
@@ -311,6 +325,11 @@ int App::exec_command(const int argc, const char *const argv[]) {
 
   if (cmd_upper == "TYPE") {
     if (argc == 2) return cmd_type_file(std::string{"/FS/"} + argv[1]);
+    return ESP_ERR_INVALID_SIZE;
+  }
+
+  if (cmd_upper == "REBOOT") {
+    if (argc == 1) return cmd_reboot();
     return ESP_ERR_INVALID_SIZE;
   }
 

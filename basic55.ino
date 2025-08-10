@@ -55,6 +55,7 @@ void setup() {
   esp_log_level_set("*", ESP_LOG_INFO);
 
   app.setup_uart();
+  app.displayResetReason();
   app.setup_console();
   ESP_ERROR_CHECK( app.setup_FS("spiffs", "/FS") );
   app.displayCopyright();
