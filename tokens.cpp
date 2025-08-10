@@ -206,7 +206,7 @@ std::unique_ptr<const TokenOperator> Token::parseOperator(const std::string_view
       end = 1;
       return std::make_unique<const TokenOperator>(line.substr(0, end));
     case '<': // smaller
-      if ((line.size() >= 2) && (line.substr(0, 2) == "<=")) {
+      if ((line.size() >= 2) && (line.substr(0, 2) == "<=")) {  // smaller or equald
         end = 2;
         return std::make_unique<const TokenOperator>(line.substr(0, end));
       } else {
@@ -214,7 +214,7 @@ std::unique_ptr<const TokenOperator> Token::parseOperator(const std::string_view
         return std::make_unique<const TokenOperator>(line.substr(0, end));
       }
     case '>': // bigger
-      if ((line.size() >= 2) && (line.substr(0, 2) == ">=")) {
+      if ((line.size() >= 2) && (line.substr(0, 2) == ">=")) {  // bigger or equals
         end = 2;
         return std::make_unique<const TokenOperator>(line.substr(0, end));
       } else {
