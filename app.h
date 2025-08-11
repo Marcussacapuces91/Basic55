@@ -61,56 +61,53 @@ public:
   void displayResetReason() {
     const auto reason = esp_reset_reason();
     switch (reason) {
-      ESP_RST_UNKNOWN:
+      case ESP_RST_UNKNOWN:
         std::cout << "Reset reason can not be determined." << std::endl;
         break;
-      ESP_RST_POWERON:
+      case ESP_RST_POWERON:
         std::cout << "Reset due to power-on event." << std::endl;
         break;
-      ESP_RST_EXT:
+      case ESP_RST_EXT:
         std::cout << "Reset by external pin (not applicable for ESP32)" << std::endl;
         break;
-      ESP_RST_SW:
+      case ESP_RST_SW:
         std::cout << "Software reset via esp_restart." << std::endl;
         break;
-      ESP_RST_PANIC:
+      case ESP_RST_PANIC:
         std::cout << "Software reset due to exception/panic." << std::endl;
         break;
-      ESP_RST_INT_WDT:
+      case ESP_RST_INT_WDT:
         std::cout << "Reset (software or hardware) due to interrupt watchdog." << std::endl;
         break;
-      ESP_RST_TASK_WDT:
+      case ESP_RST_TASK_WDT:
         std::cout << "Reset due to task watchdog." << std::endl;
         break;
-      ESP_RST_WDT:
+      case ESP_RST_WDT:
         std::cout << "Reset due to other watchdogs." << std::endl;
         break;
-      ESP_RST_DEEPSLEEP:
+      case ESP_RST_DEEPSLEEP:
         std::cout << "Reset after exiting deep sleep mode." << std::endl;
         break;
-      ESP_RST_BROWNOUT:
+      case ESP_RST_BROWNOUT:
         std::cout << "Brownout reset (software or hardware)" << std::endl;
         break;
-      ESP_RST_SDIO:
+      case ESP_RST_SDIO:
         std::cout << "Reset over SDIO." << std::endl;
         break;
-      ESP_RST_USB:
+      case ESP_RST_USB:
         std::cout << "Reset by USB peripheral." << std::endl;
         break;
-      ESP_RST_JTAG:
+      case ESP_RST_JTAG:
         std::cout << "Reset by JTAG." << std::endl;
         break;
-      ESP_RST_EFUSE:
+      case ESP_RST_EFUSE:
         std::cout << "Reset due to efuse error." << std::endl;
         break;
-      ESP_RST_PWR_GLITCH:
+      case ESP_RST_PWR_GLITCH:
         std::cout << "Reset due to power glitch detected." << std::endl;
         break;
-      ESP_RST_CPU_LOCKUP:
+      case ESP_RST_CPU_LOCKUP:
         std::cout << "Reset due to CPU lock up (double exception)" << std::endl;
-        break;
-      esp_reset_reason_t(0x03):
-        std::cout << "Software CPU Reset." << std::endl;
         break;
       default:
         std::cout << "Other reason (" << reason << ")" << std::endl;
