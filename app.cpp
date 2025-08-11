@@ -270,14 +270,12 @@ int App::cmd_type_file(const std::string& filename) {
 }
 
 int App::cmd_reboot() {
-  std::cout << "Reboot in a few seconds..." << std::endl;
+  std::cout << "Reboot in a 5 seconds..." << std::endl;
 
   const auto start = esp_timer_get_time();
 
   int64_t current;
-  while ((current = esp_timer_get_time()) - start < 10000000) {
-    
-  }
+  while ((current = esp_timer_get_time()) - start < 5000000) ;
 
   esp_restart();
   return ESP_OK;
