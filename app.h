@@ -109,9 +109,9 @@ public:
       ESP_RST_CPU_LOCKUP:
         std::cout << "Reset due to CPU lock up (double exception)" << std::endl;
         break;
-      // 0x0C:
-      //   std::cout << "Software CPU Reset." << std::endl;
-      //   break;
+      esp_reset_reason_t(0x03):
+        std::cout << "Software CPU Reset." << std::endl;
+        break;
       default:
         std::cout << "Other reason (" << reason << ")" << std::endl;
     }
